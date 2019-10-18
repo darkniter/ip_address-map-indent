@@ -12,7 +12,7 @@ def main(filter_region=None):
         result = csv.reader(xl, 'csv')
 
         for row in result:
-            if row[0] !='' and row[1] == '':
+            if row[0] != '' and row[1] == '':
                 regions.update({transliterate(row[0]): []})
             elif len(row) == 16 and transliterate(row[15]) in regions:
                 regions[transliterate(row[15])].append(row)
@@ -28,4 +28,4 @@ def main(filter_region=None):
 
 
 if __name__ == "__main__":
-        main()
+    main()

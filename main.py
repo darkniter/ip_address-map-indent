@@ -12,12 +12,12 @@ csv.field_size_limit(10000000)
 
 def main():
 
-    csv_file, error_csv = excel_map(config.CSV_PATH,config.VLAN_PATH_XL)
+    csv_file, error_csv = excel_map(config.CSV_PATH,config.PATH_XL)
     with open(config.PATH_FILTER_XML, 'r', encoding='utf-8-sig') as loaded_map:
         smart_map = json.load(loaded_map)
         smart_map = sort_smart_map(smart_map)
     found, not_found = finder(csv_file,smart_map)
-
+    found_model, not_found_model = finder_model(csv_file,smart_map)
     not_found_hard = scan_broken(found, not_found)
 
     regions_without_hardware_notbr, not_vlan_notbr = region_founder(not_found)
@@ -30,6 +30,8 @@ def main():
     json_output('found', found)
     json_output('work_not_found', not_found)
     json_output('err_csv', error_csv)
+    json_output('found_model', found_model)
+    json_output('not_found_model', not_found_model)
 
 
     return found,not_found
@@ -84,18 +86,32 @@ def json_output(fname,file_object):
         os.remove(config.DIR + fname + '.json')
 
     json_file = open(config.DIR + fname + '.json', 'a+', encoding='utf-8-sig')
-    json_file.write(json.dumps(file_object))
+    json_file.write(json.dumps(file_object, indent='\t'))
     json_file.close()
     print(fname + ' done')
+
+
+def finder_model(csv,xml):
+
+    found_model = {}
+    not_found_model = {}
+
+    for dev in xml:
+        if dev in csv:
+            if xml[dev]['description'].split(' ')[0].split('\n')[0] == csv[dev][2].split(' ')[0].split('\n')[0]:
+                found_model.update({dev: [xml[dev], csv[dev]]})
+            elif not bool(csv[dev][19]):
+                not_found_model.update({dev: [xml[dev], csv[dev]]})
+    return found_model, not_found_model
 
 
 def finder(csv,xml):
     not_found = {}
     found = {}
+
     for dev in xml:
         if dev in csv:
             found.update({dev:[xml[dev],csv[dev],'found_mark']})
-
         else :
             not_found.update({dev: xml[dev]})
 
@@ -150,5 +166,3 @@ def excel_map(fname_info,fname_result):
 
 if __name__ == "__main__":
     main()
-
-    pass
