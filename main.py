@@ -16,10 +16,31 @@ def main():
     with open(config.PATH_FILTER_XML, 'r', encoding='utf-8-sig') as loaded_map:
         smart_map = json.load(loaded_map)
         smart_map = sort_smart_map(smart_map)
-    found, not_found = finder(csv_file,smart_map)
-    found_model, not_found_model = finder_model(csv_file,smart_map)
-    not_found_hard = scan_broken(found, not_found)
 
+    found, not_found = finder(csv_file,smart_map)
+
+    found_model, not_found_model = finder_model(csv_file,smart_map)
+
+    scan_broken(found, not_found)
+
+    csv_found, csv_not_found = finder(smart_map,csv_file, True)
+
+    json_output('found', found)
+    json_output('work_not_found', not_found)
+    json_output('err_csv', error_csv)
+    json_output('found_model', found_model)
+    json_output('not_found_model', not_found_model)
+    json_output('csv_found', csv_found)
+    json_output('csv_not_found', csv_not_found)
+
+    # regions_sub_func(found, not_found)
+
+    return found,not_found
+
+
+def regions_sub_func(found, not_found):
+
+    not_found_hard = scan_broken(found, not_found)
     regions_without_hardware_notbr, not_vlan_notbr = region_founder(not_found)
     regions_without_hardware, not_vlan = region_founder(not_found_hard)
 
@@ -27,14 +48,6 @@ def main():
     json_output('Regions_not_vlan_notbr', not_vlan_notbr)
     json_output('Regions_regions_without_hardware', regions_without_hardware)
     json_output('Regions_not_vlan', not_vlan)
-    json_output('found', found)
-    json_output('work_not_found', not_found)
-    json_output('err_csv', error_csv)
-    json_output('found_model', found_model)
-    json_output('not_found_model', not_found_model)
-
-
-    return found,not_found
 
 
 def region_founder(records):
@@ -63,23 +76,27 @@ def region_founder(records):
 def scan_broken(found, not_found):
 
     if config.BROKENOZ:
-        csvOZ, errorOZ = excel_map(config.OZ, config.OZ_JSON)
+        # csvOZ, errorOZ = excel_map(config.OZ, config.OZ_JSON)
         csv_file, error_csv = excel_map(config.BROKENOZ, config.BROKENOZ_JSON)
         json_output('work_err_broken', error_csv)
-        json_output('work_errorOZ', errorOZ)
+        # json_output('work_errorOZ', errorOZ)
+
     if csv_file:
-        found_OZ, not_found_OZ = finder(csvOZ, found)
-        found_brokenOZ, not_found_brokenOZ = finder(csv_file,found_OZ)
-        found_err_broken, not_found_err_broken = finder(csv_file,not_found)
+        # found_OZ, not_found_OZ = finder(csvOZ, found)
+        # found_brokenOZ, not_found_brokenOZ = finder(csv_file,found_OZ)
+        found_lost_broken, not_found_lost_broken = finder(csv_file,not_found)
 
 
-        json_output('work_found_brokenOZ', found_brokenOZ)
-        json_output('work_not_found_brokenOZ', not_found_brokenOZ)
-        json_output('work_found_err_broken', found_err_broken)
-        json_output('work_not_found_err_broken', not_found_err_broken)
-        json_output('work_found_OZ', found_OZ)
+        # json_output('work_found_brokenOZ', found_brokenOZ)
+        # json_output('work_not_found_brokenOZ', not_found_brokenOZ)
 
-    return not_found_err_broken
+        # json_output('work_found_OZ', found_OZ)
+        # json_output('work_not_found_OZ', not_found_OZ)
+
+        json_output('work_found_lost_broken', found_lost_broken)
+        json_output('work_not_found_lost_broken', not_found_lost_broken)
+
+    return not_found_lost_broken
 
 def json_output(fname,file_object):
     if (os.path.isfile(config.DIR + fname + '.json')):
@@ -105,15 +122,19 @@ def finder_model(csv,xml):
     return found_model, not_found_model
 
 
-def finder(csv,xml):
+def finder(namespace,namelist,option=None):
     not_found = {}
     found = {}
 
-    for dev in xml:
-        if dev in csv:
-            found.update({dev:[xml[dev],csv[dev],'found_mark']})
+    for dev in namelist:
+        if dev in namespace:
+            found.update({dev:[namelist[dev],namespace[dev]]})
         else :
-            not_found.update({dev: xml[dev]})
+            if option:
+                if namelist[dev][19] != '1':
+                    not_found.update({dev: namelist[dev]})
+            else:
+                not_found.update({dev: namelist[dev]})
 
 
     return found, not_found
@@ -143,7 +164,7 @@ def excel_map(fname_info,fname_result):
     err = {}
 
     map_xl = {}
-    csv.register_dialect('csv', delimiter=';', quoting=csv.QUOTE_NONE)
+    csv.register_dialect('csv', delimiter=';', quoting=csv.QUOTE_MINIMAL)
     with open(fname_info, 'r') as xl:
         result = csv.reader(xl, 'csv')
         for row in result:
