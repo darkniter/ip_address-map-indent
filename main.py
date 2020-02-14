@@ -26,6 +26,7 @@ def main():
     csv_found, csv_not_found = finder(smart_map,csv_file, True)
 
     json_output('found', found)
+    json_output('not_found', not_found)
     json_output('work_not_found', not_found)
     json_output('err_csv', error_csv)
     json_output('found_model', found_model)
@@ -129,6 +130,27 @@ def finder(namespace,namelist,option=None):
     for dev in namelist:
         if dev in namespace:
             found.update({dev:[namelist[dev],namespace[dev]]})
+
+        elif dev.find(';')!=-1:
+            dev_list = dev.split(';')
+            for dev_unit in dev_list:
+                if dev_unit in namespace:
+                    found.update({dev:[namelist[dev], namespace[dev_unit], dev_unit]})
+                    break
+                else:
+                    not_found.update({dev: namelist[dev]})
+
+        elif dev.find(';')==-1:
+            for dev_csv in namespace:
+                dev_list = dev_csv.split(';')
+                if dev in dev_list:
+                    found.update({dev:[namelist[dev],namespace[dev_csv]]})
+                    break
+                elif dev == dev_csv[3]:
+                    found.update({dev:[namelist[dev],namespace[dev_csv]]})
+                    break
+            else:
+                not_found.update({dev: namelist[dev]})
         else :
             if option:
                 if namelist[dev][19] != '1':
